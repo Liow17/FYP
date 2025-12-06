@@ -29,11 +29,16 @@ export default function PasswordSecurity() {
         </Link>
 
         <header className="text-center mb-12">
+          <div className="flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full mx-auto mb-6">
+            <svg className="w-8 h-8 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
           <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-4">
             Password Security
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300">
-            Learn how to create strong, secure passwords
+            Learn about creating strong, secure passwords and test your password strength with our interactive meter <span className="text-gray-500 dark:text-gray-400">powered by zxcvbn</span>.
           </p>
         </header>
 
