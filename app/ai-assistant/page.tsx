@@ -59,17 +59,24 @@ export default function AIAssistant() {
 
       const data = await response.json();
 
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: data.response
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
+      if (data.error) {
+        const errorMessage: Message = {
+          role: "assistant",
+          content: `⚠️ ${data.error}`
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      } else {
+        const assistantMessage: Message = {
+          role: "assistant",
+          content: data.response
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      }
     } catch (error) {
       console.error("Error:", error);
       const errorMessage: Message = {
         role: "assistant",
-        content: "I apologize, but I encountered an error. Please try again."
+        content: "⚠️ I apologize, but I encountered an error. Please check your connection and try again."
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {

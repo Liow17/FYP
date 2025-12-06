@@ -1,5 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
+import { fetch as undiciFetch } from "undici";
+
+// Use undici's fetch for better compatibility
+global.fetch = undiciFetch as any;
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
@@ -53,8 +57,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ response: text });
   } catch (error) {
     console.error("Error in chat API:", error);
+
+    // Provide more detailed error messages
+    let errorMessage = "Failed to process request";
+    if (error instanceof Error) {
+      if (error.message.includes("fetch failed")) {
+        errorMessage = "Unable to connect to AI service. Please check your network connection and try again.";
+      } else if (error.message.includes("API key")) {
+        errorMessage = "API configuration error. Please contact support.";
+      }
+    }
+
     return NextResponse.json(
-      { error: "Failed to process request" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

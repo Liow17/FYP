@@ -4,11 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 
 interface EmailScenario {
-  id: number;
+  id?: number;
   from: string;
   subject: string;
   body: string;
-  isPhishing: boolean;
+  type?: string;
+  isPhishing?: boolean;
   redFlags: string[];
   explanation: string;
 }
@@ -143,6 +144,11 @@ export default function PhishingSimulation() {
   const [currentEmailIndex, setCurrentEmailIndex] = useState(0);
   const [emailAnswers, setEmailAnswers] = useState<{ [key: number]: boolean | null }>({});
   const [showEmailExplanation, setShowEmailExplanation] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiTutorFeedback, setAiTutorFeedback] = useState<string>("");
+  const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
+  const [dynamicEmail, setDynamicEmail] = useState<EmailScenario | null>(null);
+  const [useDynamicEmail, setUseDynamicEmail] = useState(false);
 
   // URL simulation state
   const [urlAnswers, setUrlAnswers] = useState<{ [key: number]: boolean | null }>({});
@@ -152,25 +158,130 @@ export default function PhishingSimulation() {
   const [loginAnswers, setLoginAnswers] = useState<{ [key: number]: boolean | null }>({});
   const [showLoginExplanations, setShowLoginExplanations] = useState<{ [key: number]: boolean }>({});
 
-  const currentEmail = emailScenarios[currentEmailIndex];
+  // Get the current email (either dynamic or from static scenarios)
+  const currentEmail = useDynamicEmail && dynamicEmail
+    ? dynamicEmail
+    : emailScenarios[currentEmailIndex];
 
-  const handleEmailAnswer = (isPhishing: boolean) => {
-    setEmailAnswers({ ...emailAnswers, [currentEmail.id]: isPhishing });
+  // Generate a new dynamic phishing scenario
+  const generateNewScenario = async () => {
+    setIsGenerating(true);
+    setAiTutorFeedback("");
+    setShowEmailExplanation(false);
+    try {
+      const response = await fetch("/api/generate-scenario", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ difficulty: "medium" }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate scenario");
+      }
+
+      const data = await response.json();
+
+      if (data.error) {
+        alert(`Error: ${data.error}`);
+        return;
+      }
+
+      // Convert the scenario to our format
+      const newScenario: EmailScenario = {
+        from: data.scenario.from,
+        subject: data.scenario.subject,
+        body: data.scenario.body,
+        type: data.scenario.type,
+        isPhishing: data.scenario.type.toLowerCase() === "phishing",
+        redFlags: data.scenario.redFlags || [],
+        explanation: data.scenario.explanation,
+      };
+
+      setDynamicEmail(newScenario);
+      setUseDynamicEmail(true);
+    } catch (error) {
+      console.error("Error generating scenario:", error);
+      alert("Unable to generate a new scenario. This feature requires network access.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Get AI Tutor feedback
+  const getAITutorFeedback = async (userAnswer: string, correctAnswer: string) => {
+    setIsLoadingFeedback(true);
+    try {
+      const response = await fetch("/api/ai-tutor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scenario: {
+            from: currentEmail.from,
+            subject: currentEmail.subject,
+            body: currentEmail.body,
+            type: currentEmail.type || (currentEmail.isPhishing ? "Phishing" : "Legitimate"),
+            redFlags: currentEmail.redFlags,
+          },
+          userAnswer,
+          correctAnswer,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get feedback");
+      }
+
+      const data = await response.json();
+
+      if (data.error) {
+        setAiTutorFeedback("Unable to get AI feedback at this time.");
+      } else {
+        setAiTutorFeedback(data.feedback);
+      }
+    } catch (error) {
+      console.error("Error getting AI feedback:", error);
+      setAiTutorFeedback("AI Tutor is unavailable. This feature requires network access.");
+    } finally {
+      setIsLoadingFeedback(false);
+    }
+  };
+
+  const handleEmailAnswer = async (isPhishing: boolean) => {
+    const emailId = currentEmail.id || 0;
+    setEmailAnswers({ ...emailAnswers, [emailId]: isPhishing });
     setShowEmailExplanation(true);
+
+    // Get AI Tutor feedback
+    const userAnswer = isPhishing ? "Phishing" : "Legitimate";
+    const correctAnswer = (currentEmail.isPhishing || currentEmail.type?.toLowerCase() === "phishing")
+      ? "Phishing"
+      : "Legitimate";
+
+    await getAITutorFeedback(userAnswer, correctAnswer);
   };
 
   const handleNextEmail = () => {
-    if (currentEmailIndex < emailScenarios.length - 1) {
+    if (useDynamicEmail) {
+      // In dynamic mode, reset to allow new generation
+      setUseDynamicEmail(false);
+      setDynamicEmail(null);
+      setAiTutorFeedback("");
+    } else if (currentEmailIndex < emailScenarios.length - 1) {
       setCurrentEmailIndex(currentEmailIndex + 1);
-      setShowEmailExplanation(false);
     }
+    setShowEmailExplanation(false);
   };
 
   const handlePrevEmail = () => {
-    if (currentEmailIndex > 0) {
+    if (useDynamicEmail) {
+      // Exit dynamic mode and go back to static scenarios
+      setUseDynamicEmail(false);
+      setDynamicEmail(null);
+      setAiTutorFeedback("");
+    } else if (currentEmailIndex > 0) {
       setCurrentEmailIndex(currentEmailIndex - 1);
-      setShowEmailExplanation(false);
     }
+    setShowEmailExplanation(false);
   };
 
   const handleUrlAnswer = (id: number, isPhishing: boolean) => {
@@ -183,7 +294,9 @@ export default function PhishingSimulation() {
     setShowLoginExplanations({ ...showLoginExplanations, [id]: true });
   };
 
-  const isEmailCorrect = emailAnswers[currentEmail.id] === currentEmail.isPhishing;
+  const emailId = currentEmail.id || 0;
+  const currentEmailIsPhishing = currentEmail.isPhishing || currentEmail.type?.toLowerCase() === 'phishing';
+  const isEmailCorrect = emailAnswers[emailId] === currentEmailIsPhishing;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 dark:from-gray-900 dark:to-gray-800">
@@ -203,12 +316,38 @@ export default function PhishingSimulation() {
 
         {/* Email Scenario Simulation */}
         <section className="max-w-4xl mx-auto mb-16">
-          <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-6 text-center">
-            📧 Email Scenario Analysis
-          </h2>
-          <p className="text-center text-gray-600 dark:text-gray-300 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
+              📧 Email Scenario Analysis
+            </h2>
+            <button
+              onClick={generateNewScenario}
+              disabled={isGenerating}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition-all flex items-center gap-2"
+            >
+              {isGenerating ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Generate New Scenario
+                </>
+              )}
+            </button>
+          </div>
+          <p className="text-center text-gray-600 dark:text-gray-300 mb-2">
             Examine the email below. Is it legitimate or a phishing attempt?
           </p>
+          {useDynamicEmail && (
+            <p className="text-center text-sm text-purple-600 dark:text-purple-400 mb-6 font-semibold">
+              🤖 AI-Generated Scenario - Powered by Google Gemini
+            </p>
+          )}
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 mb-6">
             {/* Email Header */}
@@ -250,29 +389,58 @@ export default function PhishingSimulation() {
 
             {/* Explanation */}
             {showEmailExplanation && (
-              <div className={`p-6 rounded-lg ${isEmailCorrect ? 'bg-green-50 dark:bg-green-900/20 border-2 border-green-500' : 'bg-red-50 dark:bg-red-900/20 border-2 border-red-500'}`}>
-                <h3 className="text-xl font-bold mb-3">
-                  {isEmailCorrect ? '✅ Correct!' : '❌ Incorrect'}
-                </h3>
-
-                <p className="text-gray-800 dark:text-gray-200 mb-4">
-                  <strong>Answer:</strong> This email is {currentEmail.isPhishing ? 'PHISHING' : 'LEGITIMATE'}
-                </p>
-
-                {currentEmail.redFlags.length > 0 && (
-                  <div className="mb-4">
-                    <p className="font-semibold text-gray-800 dark:text-white mb-2">🚩 Red Flags:</p>
-                    <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
-                      {currentEmail.redFlags.map((flag, index) => (
-                        <li key={index}>{flag}</li>
-                      ))}
-                    </ul>
+              <div className="space-y-4">
+                {/* AI Tutor Feedback */}
+                {isLoadingFeedback ? (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-500 p-6 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-blue-800 dark:text-blue-200 font-semibold">
+                        🤖 AI Tutor is analyzing your answer...
+                      </p>
+                    </div>
+                  </div>
+                ) : aiTutorFeedback && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-500 p-6 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <div className="text-3xl">🤖</div>
+                      <div>
+                        <h4 className="text-lg font-bold text-blue-800 dark:text-blue-200 mb-2">
+                          AI Tutor Feedback
+                        </h4>
+                        <p className="text-gray-800 dark:text-gray-200">
+                          {aiTutorFeedback}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                <p className="text-gray-700 dark:text-gray-300">
-                  <strong>Explanation:</strong> {currentEmail.explanation}
-                </p>
+                {/* Standard Explanation */}
+                <div className={`p-6 rounded-lg ${isEmailCorrect ? 'bg-green-50 dark:bg-green-900/20 border-2 border-green-500' : 'bg-red-50 dark:bg-red-900/20 border-2 border-red-500'}`}>
+                  <h3 className="text-xl font-bold mb-3">
+                    {isEmailCorrect ? '✅ Correct!' : '❌ Incorrect'}
+                  </h3>
+
+                  <p className="text-gray-800 dark:text-gray-200 mb-4">
+                    <strong>Answer:</strong> This email is {(currentEmail.isPhishing || currentEmail.type?.toLowerCase() === 'phishing') ? 'PHISHING' : 'LEGITIMATE'}
+                  </p>
+
+                  {currentEmail.redFlags.length > 0 && (
+                    <div className="mb-4">
+                      <p className="font-semibold text-gray-800 dark:text-white mb-2">🚩 Red Flags:</p>
+                      <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                        {currentEmail.redFlags.map((flag, index) => (
+                          <li key={index}>{flag}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <p className="text-gray-700 dark:text-gray-300">
+                    <strong>Explanation:</strong> {currentEmail.explanation}
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -281,30 +449,34 @@ export default function PhishingSimulation() {
           <div className="flex justify-between items-center">
             <button
               onClick={handlePrevEmail}
-              disabled={currentEmailIndex === 0}
+              disabled={!useDynamicEmail && currentEmailIndex === 0}
               className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
-                currentEmailIndex === 0
+                !useDynamicEmail && currentEmailIndex === 0
                   ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 cursor-not-allowed'
                   : 'bg-purple-600 hover:bg-purple-700 text-white'
               }`}
             >
-              ← Previous
+              ← {useDynamicEmail ? 'Back to Examples' : 'Previous'}
             </button>
 
             <span className="text-gray-600 dark:text-gray-300">
-              Email {currentEmailIndex + 1} of {emailScenarios.length}
+              {useDynamicEmail ? (
+                <span className="text-purple-600 dark:text-purple-400 font-semibold">AI-Generated</span>
+              ) : (
+                <>Email {currentEmailIndex + 1} of {emailScenarios.length}</>
+              )}
             </span>
 
             <button
               onClick={handleNextEmail}
-              disabled={currentEmailIndex === emailScenarios.length - 1}
+              disabled={!useDynamicEmail && currentEmailIndex === emailScenarios.length - 1}
               className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
-                currentEmailIndex === emailScenarios.length - 1
+                !useDynamicEmail && currentEmailIndex === emailScenarios.length - 1
                   ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 cursor-not-allowed'
                   : 'bg-purple-600 hover:bg-purple-700 text-white'
               }`}
             >
-              Next →
+              {useDynamicEmail ? 'Back to Examples →' : 'Next →'}
             </button>
           </div>
         </section>
