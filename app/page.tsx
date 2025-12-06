@@ -13,7 +13,7 @@ export default function Home() {
           </p>
         </header>
 
-        <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
           {/* Password Security Module */}
           <Link href="/password-security">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer h-full">
@@ -32,7 +32,7 @@ export default function Home() {
                 <li>✓ Password strength fundamentals</li>
                 <li>✓ Interactive password testing</li>
                 <li>✓ Best practices and tips</li>
-                <li>✓ Knowledge assessment quiz</li>
+                <li>✓ Knowledge assessment quiz (10 questions)</li>
               </ul>
             </div>
           </Link>
@@ -56,6 +56,52 @@ export default function Home() {
                 <li>✓ Common attack patterns</li>
                 <li>✓ How to identify scams</li>
                 <li>✓ Knowledge assessment quiz</li>
+              </ul>
+            </div>
+          </Link>
+
+          {/* Phishing Simulation Module */}
+          <Link href="/phishing-simulation">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer h-full">
+              <div className="flex items-center justify-center w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-full mb-6">
+                <svg className="w-8 h-8 text-purple-600 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+                Phishing Simulation
+              </h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
+                Practice identifying phishing attempts with realistic scenarios. Analyze suspicious emails, URLs, and fake login pages.
+              </p>
+              <ul className="text-sm text-gray-500 dark:text-gray-400 space-y-2">
+                <li>✓ Email scenario analysis</li>
+                <li>✓ URL safety inspection</li>
+                <li>✓ Fake login page detection</li>
+                <li>✓ Real-world phishing examples</li>
+              </ul>
+            </div>
+          </Link>
+
+          {/* AI Assistant Module */}
+          <Link href="/ai-assistant">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer h-full">
+              <div className="flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full mb-6">
+                <svg className="w-8 h-8 text-green-600 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+                AI Assistant
+              </h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
+                Get instant answers to your cybersecurity questions from our AI assistant powered by Google Gemini.
+              </p>
+              <ul className="text-sm text-gray-500 dark:text-gray-400 space-y-2">
+                <li>✓ Ask about phishing & passwords</li>
+                <li>✓ Get personalized advice</li>
+                <li>✓ Learn best practices</li>
+                <li>✓ 24/7 availability</li>
               </ul>
             </div>
           </Link>

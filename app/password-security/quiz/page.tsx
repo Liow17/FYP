@@ -97,6 +97,30 @@ const questions: Question[] = [
     ],
     correctAnswer: 1,
     explanation: "Unpredictability comes from avoiding patterns that attackers expect: dictionary words, keyboard patterns, common substitutions (like '@' for 'a'), and personal information."
+  },
+  {
+    id: 9,
+    question: "Which type of attack tries all possible password combinations until finding the correct one?",
+    options: [
+      "Phishing attack",
+      "Brute force attack",
+      "Social engineering",
+      "Man-in-the-middle attack"
+    ],
+    correctAnswer: 1,
+    explanation: "A brute force attack systematically tries every possible combination of characters until the correct password is found. Longer, more complex passwords exponentially increase the time required for such attacks."
+  },
+  {
+    id: 10,
+    question: "What is the BEST way to secure accounts that store sensitive information?",
+    options: [
+      "Use the same strong password across all accounts",
+      "Use a unique strong password AND enable multi-factor authentication",
+      "Change your password every week",
+      "Use a short password but change it frequently"
+    ],
+    correctAnswer: 1,
+    explanation: "The strongest security comes from combining a unique, strong password with multi-factor authentication (2FA/MFA). This layered approach ensures that even if your password is compromised, attackers still cannot access your account."
   }
 ];
 
